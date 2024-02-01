@@ -508,7 +508,7 @@ namespace fuzzybools
 
 		if (d == 0)
 		{
-			printf("bary conversion perp");
+			if (messages) {  printf("bary conversion perp"); }
 		}
 
 		double det = 1.0 / d;

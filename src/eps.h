@@ -1,5 +1,6 @@
 #pragma once
 
+constexpr bool messages = false; // ???
 constexpr double EPS_NONZERO = 1e-20; // ???
 constexpr double EPS_MINISCULE = 1e-12; // what?
 constexpr double EPS_TINY = 1e-9;

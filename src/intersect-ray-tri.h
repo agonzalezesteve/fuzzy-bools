@@ -66,12 +66,12 @@ namespace fuzzybools
                 glm::dvec3 vecBary = bary.x * A + bary.y * B + bary.z * C;
                 if (!equals(vec, vecBary, EPS_SMALL))
                 {
-                    printf("bad bary conversion\n");
+                    if (messages) { printf("bad bary conversion\n"); }
                 }
                 glm::dvec3 reconstr = ToBary(A, B, C, vec);
                 if (!equals(bary, reconstr, EPS_SMALL))
                 {
-                    printf("bad bary conversion\n");
+                    if (messages) { printf("bad bary conversion\n"); }
                 }
             }
 #endif

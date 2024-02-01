@@ -128,7 +128,7 @@ namespace fuzzybools
         {
             if (visited[cur])
             {
-                printf("Loop in findLoop ... how ironic \n");
+                if (messages) { printf("Loop in findLoop ... how ironic \n"); }
                 return {};
             }
 
@@ -149,7 +149,7 @@ namespace fuzzybools
             if (nbs.empty())
             {
                 // broken poly
-                printf("Found vert without neighbours other than the origin of this search!\n");
+                if (messages) {  printf("Found vert without neighbours other than the origin of this search!\n"); }
                 loop.clear();
                 return result;
             }

@@ -200,11 +200,6 @@ namespace fuzzybools
 			static size_t idcounter = 0;
 			idcounter++;
 			globalID = idcounter;
-
-			if (globalID == 320 || globalID == 321)
-			{
-				printf("adsf");
-			}
 		}
 
 		double round(double input)
@@ -239,20 +234,20 @@ namespace fuzzybools
 
 			if (!lines[lineId.first].IsPointOnLine(a.location3D))
 			{
-				printf("bad point");
+				if (messages) {  printf("bad point"); }
 			}
 			if (!lines[lineId.first].IsPointOnLine(b.location3D))
 			{
-				printf("bad point");
+				if (messages) {  printf("bad point"); }
 			}
 
 			if (!aabb.contains(a.location3D))
 			{
-				printf("bad points");
+				if (messages) {  printf("bad points"); }
 			}
 			if (!aabb.contains(b.location3D))
 			{
-				printf("bad points");
+				if (messages) {  printf("bad points"); }
 			}
 
 			lines[lineId.first].AddPointToLine(lines[lineId.first].GetPosOnLine(a.location3D), a.id);
@@ -411,7 +406,7 @@ namespace fuzzybools
 		{
 			if (a == b)
 			{
-				printf("a == b on AddSegment");
+				if (messages) {  printf("a == b on AddSegment"); }
 				return;
 			}
 
@@ -776,15 +771,15 @@ namespace fuzzybools
 
 					if (!planes[planeId].IsPointOnPlane(a))
 					{
-						printf("unexpected point on plane\n");
+						if (messages) {  printf("unexpected point on plane\n"); }
 					}
 					if (!planes[planeId].IsPointOnPlane(b))
 					{
-						printf("unexpected point on plane\n");
+						if (messages) {  printf("unexpected point on plane\n"); }
 					}
 					if (!planes[planeId].IsPointOnPlane(c))
 					{
-						printf("unexpected point on plane\n");
+						if (messages) {  printf("unexpected point on plane\n"); }
 					}
 
 					planes[planeId].AddPoint(a);
@@ -805,7 +800,7 @@ namespace fuzzybools
 				}
 				else
 				{
-					printf("Degenerate face in AddGeometry\n");
+					if (messages) {  printf("Degenerate face in AddGeometry\n"); }
 				}
 			}
 
@@ -890,12 +885,12 @@ namespace fuzzybools
 			{
 				if (!l.IsPointOnLine(points[segment.first].location3D))
 				{
-					printf("point not on line");
+					if (messages) {  printf("point not on line"); }
 				}
 
 				if (!l.IsPointOnLine(points[segment.second].location3D))
 				{
-					printf("point not on line");
+					if (messages) {  printf("point not on line"); }
 				}
 
 				pointsInOrder.emplace_back(segment.first, l.GetPosOnLine(points[segment.first].location3D));
@@ -963,7 +958,7 @@ namespace fuzzybools
 					if (pointToProjectedPoint.count(segment.first) == 0)
 					{
 						bool expectedOnPlane = p.IsPointOnPlane(points[segment.first].location3D);
-						printf("unknown point in list, repairing");
+						if (messages) {  printf("unknown point in list, repairing"); }
 
 						pointToProjectedPoint[segment.first] = projectedPoints.size();
 						projectedPointToPoint[projectedPoints.size()] = segment.first;
@@ -972,7 +967,7 @@ namespace fuzzybools
 					if (pointToProjectedPoint.count(segment.second) == 0)
 					{
 						bool expectedOnPlane = p.IsPointOnPlane(points[segment.second].location3D);
-						printf("unknown point in list, repairing");
+						if (messages) {  printf("unknown point in list, repairing"); }
 
 						pointToProjectedPoint[segment.second] = projectedPoints.size();
 						projectedPointToPoint[projectedPoints.size()] = segment.second;
@@ -1090,7 +1085,7 @@ namespace fuzzybools
 
 		if (!p.IsPointOnPlane(isectLine.origin) || !p.IsPointOnPlane(isectLine.origin + isectLine.direction * 100.))
 		{
-			printf("Bad isect line");
+			if (messages) {  printf("Bad isect line"); }
 		}
 
 		for (auto& seg : segments)
@@ -1099,7 +1094,7 @@ namespace fuzzybools
 
 			if (!p.aabb.contains(pos))
 			{
-				printf("making pos outside");
+				if (messages) {  printf("making pos outside"); }
 			}
 
 			size_t ptA = sp.AddPoint(pos);
@@ -1107,11 +1102,11 @@ namespace fuzzybools
 
 			if (!p.aabb.contains(sp.points[ptA].location3D))
 			{
-				printf("bad points");
+				if (messages) {  printf("bad points"); }
 			}
 			if (!p.aabb.contains(sp.points[ptB].location3D))
 			{
-				printf("bad points");
+				if (messages) {  printf("bad points"); }
 			}
 
 			//if (ptA != ptB)
@@ -1122,11 +1117,11 @@ namespace fuzzybools
 
 			if (!p.IsPointOnPlane(sp.points[ptA].location3D))
 			{
-				printf("bad point");
+				if (messages) {  printf("bad point"); }
 			}
 			if (!p.IsPointOnPlane(sp.points[ptB].location3D))
 			{
-				printf("bad point");
+				if (messages) {  printf("bad point"); }
 			}
 
 
@@ -1168,11 +1163,11 @@ namespace fuzzybools
 				{
 					if (!p.aabb.contains(sp.points[seg.first].location3D))
 					{
-						printf("bad points");
+						if (messages) {  printf("bad points"); }
 					}
 					if (!p.aabb.contains(sp.points[seg.second].location3D))
 					{
-						printf("bad points");
+						if (messages) {  printf("bad points"); }
 					}
 
 					// intersection, mark index of line B and distance on line A
@@ -1181,12 +1176,12 @@ namespace fuzzybools
 
 					if (!p.aabb.contains(result.point2))
 					{
-						printf("bad points");
+						if (messages) {  printf("bad points"); }
 					}
 
 					if (!equals(pt, result.point2, SCALED_EPS_BIG))
 					{
-						printf("BAD POINT");
+						if (messages) {  printf("BAD POINT"); }
 					}
 				}
 			}
@@ -1219,7 +1214,7 @@ namespace fuzzybools
 						// intersection! Take center and insert
 						if (!p.aabb.contains(result.point1))
 						{
-							printf("bad points");
+							if (messages) {  printf("bad points"); }
 							continue;
 						}
 
@@ -1365,11 +1360,11 @@ namespace fuzzybools
 
 					if (!planeA.IsPointOnPlane(intersectionLine.origin) || !planeA.IsPointOnPlane(intersectionLine.origin + intersectionLine.direction * 1000.))
 					{
-						printf("Bad isect line");
+						if (messages) {  printf("Bad isect line"); }
 					}
 					if (!planeB.IsPointOnPlane(intersectionLine.origin) || !planeB.IsPointOnPlane(intersectionLine.origin + intersectionLine.direction * 1000.))
 					{
-						printf("Bad isect line");
+						if (messages) {  printf("Bad isect line"); }
 					}
 
 					// get all intersection points with the shared line and both planes
