@@ -993,7 +993,7 @@ namespace fuzzybools
 						edgesPrinted.push_back({ projectedPoints[e.first], projectedPoints[e.second] });
 					}
 
-					DumpSVGLines(edgesPrinted, L"poly_" + std::to_wstring(line.id) + L".html");
+					// DumpSVGLines(edgesPrinted, L"poly_" + std::to_wstring((longline.id) + L".html");
 				}
 			}
 
@@ -1426,7 +1426,6 @@ namespace fuzzybools
 			geom.AddFace(a, b, c);
 		}
 
-		/*
 		for (auto& faceIndex : sp.B.irrelevantFaces)
 		{
 			const Face& f = sp._linkedB->GetFace(faceIndex);
@@ -1436,7 +1435,7 @@ namespace fuzzybools
 			auto c = sp._linkedB->GetPoint(f.i2);
 
 			geom.AddFace(a, b, c);
-		}*/
+		}
 
 		return geom;
 	}
