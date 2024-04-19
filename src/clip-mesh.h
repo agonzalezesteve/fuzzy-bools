@@ -20,7 +20,7 @@ namespace fuzzybools
         DIFFERENCE
     };
 
-    static Geometry clipBooleanResult(const BooleanOperator op, Geometry &mesh, BVH &bvh1, BVH &bvh2)
+    static Geometry ClipBooleanResult(const BooleanOperator op, Geometry &mesh, BVH &bvh1, BVH &bvh2)
     {
         Geometry booleanResult;
 
@@ -112,5 +112,54 @@ namespace fuzzybools
         }
 
         return booleanResult;
+    }
+
+    static std::pair<Geometry, Geometry> SplitBoundaryInIntersectionAndDifference(Geometry &mesh, BVH &bvh1, BVH &bvh2)
+    {
+        std::pair<Geometry, Geometry> intersectionAndDifferenceGeom;
+
+        for (uint32_t i = 0; i < mesh.numFaces; i++)
+        {
+            Face tri = mesh.GetFace(i);
+            glm::dvec3 a = mesh.GetPoint(tri.i0);
+            glm::dvec3 b = mesh.GetPoint(tri.i1);
+            glm::dvec3 c = mesh.GetPoint(tri.i2);
+
+            glm::dvec3 triCenter = (a + b + c) * 1.0 / 3.0;
+            glm::dvec3 n = computeNormal(a, b, c);
+            auto isInside1Result = isInsideMesh(triCenter, n, *bvh1.ptr, bvh1);
+            auto isInside2Result = isInsideMesh(triCenter, n, *bvh2.ptr, bvh2);
+
+            if (isInside1Result.loc == MeshLocation::BOUNDARY)
+            {
+                auto dot = glm::dot(n, isInside1Result.normal);
+
+                if (isInside2Result.loc == MeshLocation::BOUNDARY)
+                {
+                    if (dot < 0)
+                    {
+                        intersectionAndDifferenceGeom.first.AddFace(b, a, c);
+                    }
+                    else
+                    {
+                        intersectionAndDifferenceGeom.first.AddFace(a, b, c);
+                    }
+                }
+                else
+                {
+                    if (dot < 0)
+                    {
+                        intersectionAndDifferenceGeom.second.AddFace(b, a, c);
+                    }
+                    else
+                    {
+                        intersectionAndDifferenceGeom.second.AddFace(a, b, c);
+                    }
+
+                }
+            }
+        }
+
+        return intersectionAndDifferenceGeom;
     }
 }
