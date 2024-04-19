@@ -7,10 +7,10 @@
 
 #include <glm/glm.hpp>
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
+#pragma warning(push)
+#pragma warning(disable : 4267)
 #include <CDT.h>
-#pragma warning( pop )
+#pragma warning(pop)
 
 #include "geometry.h"
 #include "aabb.h"
@@ -32,7 +32,7 @@ namespace fuzzybools
 		glm::dvec3 left;
 		glm::dvec3 right;
 
-		glm::dvec2 project(const glm::dvec3& pt)
+		glm::dvec2 project(const glm::dvec3 &pt)
 		{
 			auto relative = pt - origin;
 			return glm::dvec2(glm::dot(relative, left), glm::dot(relative, right));
@@ -78,7 +78,7 @@ namespace fuzzybools
 			return dist < EPS_BIG;
 		}
 		*/
-		bool IsPointOnLine(const glm::dvec3& pos) const
+		bool IsPointOnLine(const glm::dvec3 &pos) const
 		{
 			glm::dvec3 A = pos;
 			glm::dvec3 B = origin;
@@ -91,7 +91,7 @@ namespace fuzzybools
 			return glm::distance(P, A) < SCALED_EPS_BIG;
 		}
 
-		double GetPosOnLine(const glm::dvec3& pos) const
+		double GetPosOnLine(const glm::dvec3 &pos) const
 		{
 			return glm::dot(pos - origin, direction);
 		}
@@ -101,12 +101,12 @@ namespace fuzzybools
 			return origin + direction * dist;
 		}
 
-		bool IsColinear(const Line& other) const
+		bool IsColinear(const Line &other) const
 		{
 			return (equals(other.direction, direction, EPS_SMALL) || equals(other.direction, -direction, EPS_SMALL));
 		}
 
-		bool IsEqualTo(const glm::dvec3& pos, const glm::dvec3& dir) const
+		bool IsEqualTo(const glm::dvec3 &pos, const glm::dvec3 &dir) const
 		{
 			// check dir
 			if (!(equals(dir, direction, EPS_SMALL) || equals(dir, -direction, EPS_SMALL)))
@@ -126,9 +126,10 @@ namespace fuzzybools
 		void AddPointToLine(double dist, size_t id)
 		{
 			// check existing
-			for (auto& p : points)
+			for (auto &p : points)
 			{
-				if (p.second == id) return;
+				if (p.second == id)
+					return;
 			}
 
 			// add new point
@@ -136,9 +137,10 @@ namespace fuzzybools
 
 			// re-sort all
 			std::sort(points.begin(), points.end(),
-				[&](const std::pair<double, size_t>& left, const std::pair<double, size_t>& right) {
-					return left.first < right.first;
-				});
+					  [&](const std::pair<double, size_t> &left, const std::pair<double, size_t> &right)
+					  {
+						  return left.first < right.first;
+					  });
 		}
 
 		std::vector<std::pair<size_t, size_t>> GetSegments() const
@@ -171,7 +173,7 @@ namespace fuzzybools
 			globalID = idcounter;
 		}
 
-		bool operator==(const glm::dvec3& pt)
+		bool operator==(const glm::dvec3 &pt)
 		{
 			return equals(location3D, pt, SCALED_EPS_BIG);
 		}
@@ -190,7 +192,7 @@ namespace fuzzybools
 		std::vector<Line> lines;
 		AABB aabb;
 
-		void AddPoint(const glm::dvec3& pt)
+		void AddPoint(const glm::dvec3 &pt)
 		{
 			aabb.merge(pt);
 		}
@@ -205,8 +207,8 @@ namespace fuzzybools
 		double round(double input)
 		{
 			input = std::fabs(input) < EPS_BIG ? 0.0 : input;
-			input = std::fabs(input) < (1 - EPS_BIG) ? input :
-				input > 0 ? 1.0 : -1.0;
+			input = std::fabs(input) < (1 - EPS_BIG) ? input : input > 0 ? 1.0
+																		 : -1.0;
 			return input;
 		}
 
@@ -225,7 +227,7 @@ namespace fuzzybools
 			return glm::normalize(dir);
 		}
 
-		std::pair<size_t, bool> AddLine(const Point& a, const Point& b)
+		std::pair<size_t, bool> AddLine(const Point &a, const Point &b)
 		{
 			glm::dvec3 pos = a.location3D;
 			glm::dvec3 dir = GetDirection(pos, b.location3D);
@@ -234,20 +236,32 @@ namespace fuzzybools
 
 			if (!lines[lineId.first].IsPointOnLine(a.location3D))
 			{
-				if (messages) {  printf("bad point"); }
+				if (messages)
+				{
+					printf("bad point");
+				}
 			}
 			if (!lines[lineId.first].IsPointOnLine(b.location3D))
 			{
-				if (messages) {  printf("bad point"); }
+				if (messages)
+				{
+					printf("bad point");
+				}
 			}
 
 			if (!aabb.contains(a.location3D))
 			{
-				if (messages) {  printf("bad points"); }
+				if (messages)
+				{
+					printf("bad points");
+				}
 			}
 			if (!aabb.contains(b.location3D))
 			{
-				if (messages) {  printf("bad points"); }
+				if (messages)
+				{
+					printf("bad points");
+				}
 			}
 
 			lines[lineId.first].AddPointToLine(lines[lineId.first].GetPosOnLine(a.location3D), a.id);
@@ -256,13 +270,13 @@ namespace fuzzybools
 			return lineId;
 		}
 
-		std::pair<size_t, bool> AddLine(const glm::dvec3& pos, const glm::dvec3& dir)
+		std::pair<size_t, bool> AddLine(const glm::dvec3 &pos, const glm::dvec3 &dir)
 		{
-			for (auto& line : lines)
+			for (auto &line : lines)
 			{
 				if (line.IsEqualTo(pos, dir))
 				{
-					return { line.id, false };
+					return {line.id, false};
 				}
 			}
 
@@ -273,7 +287,7 @@ namespace fuzzybools
 
 			lines.push_back(l);
 
-			return { l.id, true };
+			return {l.id, true};
 		}
 
 		void RemoveLastLine()
@@ -281,26 +295,26 @@ namespace fuzzybools
 			lines.pop_back();
 		}
 
-		bool IsEqualTo(const glm::dvec3& n, double d)
+		bool IsEqualTo(const glm::dvec3 &n, double d)
 		{
 			// TODO: this EPS_BIG2 is too large, 1 mm
 			return (equals(normal, n, EPS_BIG2) && equals(distance, d, EPS_BIG2)) ||
-				(equals(normal, -n, EPS_BIG2) && equals(distance, -d, EPS_BIG2));
+				   (equals(normal, -n, EPS_BIG2) && equals(distance, -d, EPS_BIG2));
 		}
 
-		glm::dvec2 GetPosOnPlane(const glm::dvec3& pos)
+		glm::dvec2 GetPosOnPlane(const glm::dvec3 &pos)
 		{
 			return {};
 		}
 
-		bool HasOverlap(const std::pair<size_t, size_t>& A, const std::pair<size_t, size_t>& B)
+		bool HasOverlap(const std::pair<size_t, size_t> &A, const std::pair<size_t, size_t> &B)
 		{
 			return (A.first == B.first || A.first == B.second || A.second == B.first || A.second == B.second);
 		}
 
-		void PutPointOnLines(Point& p)
+		void PutPointOnLines(Point &p)
 		{
-			for (auto& l : lines)
+			for (auto &l : lines)
 			{
 				if (l.IsPointOnLine(p.location3D))
 				{
@@ -313,7 +327,7 @@ namespace fuzzybools
 			}
 		}
 
-		bool IsPointOnPlane(const glm::dvec3& pos)
+		bool IsPointOnPlane(const glm::dvec3 &pos)
 		{
 			double d = glm::dot(normal, pos);
 			return equals(distance, d, SCALED_EPS_BIG);
@@ -362,17 +376,17 @@ namespace fuzzybools
 			return a == p || b == p || c == p;
 		}
 
-		bool IsNeighbour(Triangle& t)
+		bool IsNeighbour(Triangle &t)
 		{
 			return HasPoint(t.a) || HasPoint(t.b) || HasPoint(t.c);
 		}
 
-		bool SamePoints(Triangle& other)
+		bool SamePoints(Triangle &other)
 		{
 			return other.HasPoint(a) && other.HasPoint(b) && other.HasPoint(c);
 		}
 
-		size_t GetNotShared(Triangle& other)
+		size_t GetNotShared(Triangle &other)
 		{
 			if (!other.HasPoint(a))
 			{
@@ -401,12 +415,14 @@ namespace fuzzybools
 		std::map<size_t, std::vector<std::pair<size_t, size_t>>> planeSegments;
 		std::map<size_t, std::map<std::pair<size_t, size_t>, size_t>> planeSegmentCounts;
 
-
 		void AddSegment(size_t planeId, size_t a, size_t b)
 		{
 			if (a == b)
 			{
-				if (messages) {  printf("a == b on AddSegment"); }
+				if (messages)
+				{
+					printf("a == b on AddSegment");
+				}
 				return;
 			}
 
@@ -438,7 +454,7 @@ namespace fuzzybools
 		{
 			std::vector<size_t> returnTriangles;
 
-			for (auto& t : triangles)
+			for (auto &t : triangles)
 			{
 				if (t.HasPoint(p))
 				{
@@ -453,7 +469,7 @@ namespace fuzzybools
 		{
 			std::vector<size_t> returnTriangles;
 
-			for (auto& t : triangles)
+			for (auto &t : triangles)
 			{
 				if (t.HasPoint(a) && t.HasPoint(b))
 				{
@@ -464,7 +480,7 @@ namespace fuzzybools
 			return returnTriangles;
 		}
 
-		std::vector<std::pair<std::pair<size_t, size_t>, std::vector<size_t>>> GetNeighbourTriangles(Triangle& triangle)
+		std::vector<std::pair<std::pair<size_t, size_t>, std::vector<size_t>>> GetNeighbourTriangles(Triangle &triangle)
 		{
 			std::vector<std::pair<std::pair<size_t, size_t>, std::vector<size_t>>> returnTriangles;
 
@@ -488,7 +504,7 @@ namespace fuzzybools
 		{
 			std::vector<std::pair<size_t, size_t>> contours;
 
-			for (auto& [pair, count] : segmentCounts)
+			for (auto &[pair, count] : segmentCounts)
 			{
 				if (count != 2)
 				{
@@ -503,9 +519,9 @@ namespace fuzzybools
 		{
 			std::map<size_t, std::vector<std::pair<size_t, size_t>>> contours;
 
-			for (auto& [plane, segmentCounts] : planeSegmentCounts)
+			for (auto &[plane, segmentCounts] : planeSegmentCounts)
 			{
-				for (auto& [pair, count] : segmentCounts)
+				for (auto &[pair, count] : segmentCounts)
 				{
 					if (count == 1)
 					{
@@ -527,8 +543,8 @@ namespace fuzzybools
 		SegmentSet B;
 
 		// TODO: design flaw
-		const Geometry* _linkedA;
-		const Geometry* _linkedB;
+		const Geometry *_linkedA;
+		const Geometry *_linkedB;
 
 		Geometry relevantA;
 		Geometry relevantB;
@@ -537,7 +553,7 @@ namespace fuzzybools
 		BVH relevantBVHB;
 
 		// assumes all triangleIds are connected to base with an edge and are flipped correctly
-		size_t FindUppermostTriangleId(Triangle& base, const std::vector<size_t>& triangleIds)
+		size_t FindUppermostTriangleId(Triangle &base, const std::vector<size_t> &triangleIds)
 		{
 			if (triangleIds.size() == 1)
 			{
@@ -551,7 +567,8 @@ namespace fuzzybools
 
 			for (auto id : triangleIds)
 			{
-				if (id == base.id) continue;
+				if (id == base.id)
+					continue;
 
 				auto triNorm = GetNormal(A.triangles[id]);
 
@@ -585,7 +602,7 @@ namespace fuzzybools
 			double max = -DBL_MAX;
 			size_t pointID = 0;
 
-			for (auto& p : points)
+			for (auto &p : points)
 			{
 				if (p.location3D.y > max)
 				{
@@ -604,24 +621,26 @@ namespace fuzzybools
 			ON
 		};
 
-		TriangleVsPoint CalcTriPt(Triangle& T, size_t point)
+		TriangleVsPoint CalcTriPt(Triangle &T, size_t point)
 		{
 			auto norm = GetNormal(T);
 
 			auto dpt3d = points[point].location3D - points[T.a].location3D;
 			auto dot = glm::dot(norm, dpt3d);
 
-			if (std::fabs(dot) < EPS_BIG) return TriangleVsPoint::ON;
-			if (dot > 0) return TriangleVsPoint::ABOVE;
+			if (std::fabs(dot) < EPS_BIG)
+				return TriangleVsPoint::ON;
+			if (dot > 0)
+				return TriangleVsPoint::ABOVE;
 			return TriangleVsPoint::BELOW;
 		}
 
 		// simplify, see FindUppermostTriangleId
-		bool ShouldFlip(Triangle& T, Triangle& neighbour)
+		bool ShouldFlip(Triangle &T, Triangle &neighbour)
 		{
-			// for each n in N, orient n by formula: 
+			// for each n in N, orient n by formula:
 			// if triangle T and N are vertices ABCDEF with BCDE as the shared edge, consider three cases:
-			// 
+			//
 			// E is above T, then A is above n
 			// if dot(normal(T), E) > 0 => dot(normal(n), A) > 0, else flip n
 			// E is below T, then A is below n
@@ -663,21 +682,21 @@ namespace fuzzybools
 			}
 		}
 
-		glm::dvec3 GetNormal(Triangle& tri)
+		glm::dvec3 GetNormal(Triangle &tri)
 		{
 			glm::dvec3 norm(-1, -1, -1);
 			computeSafeNormal(points[tri.a].location3D, points[tri.b].location3D, points[tri.c].location3D, norm, EPS_SMALL);
 			return norm;
 		}
 
-		SegmentSet& GetSegSetA()
+		SegmentSet &GetSegSetA()
 		{
 			return A;
 		}
 
-		size_t AddPoint(const glm::dvec3& newPoint)
+		size_t AddPoint(const glm::dvec3 &newPoint)
 		{
-			for (auto& pt : points)
+			for (auto &pt : points)
 			{
 				if (pt == newPoint)
 				{
@@ -694,9 +713,9 @@ namespace fuzzybools
 			return p.id;
 		}
 
-		size_t AddPlane(const glm::dvec3& normal, double d)
+		size_t AddPlane(const glm::dvec3 &normal, double d)
 		{
-			for (auto& plane : planes)
+			for (auto &plane : planes)
 			{
 				if (plane.IsEqualTo(normal, d))
 				{
@@ -714,11 +733,11 @@ namespace fuzzybools
 			return p.id;
 		}
 
-		void Construct(const Geometry& A, const Geometry& B)
+		void Construct(const Geometry &A, const Geometry &B)
 		{
 			auto boxA = A.GetAABB();
 			auto boxB = B.GetAABB();
-			
+
 			AddGeometry(A, boxB, true);
 			AddGeometry(B, boxA, false);
 
@@ -726,7 +745,7 @@ namespace fuzzybools
 			_linkedB = &B;
 		}
 
-		void AddGeometry(const Geometry& geom, const AABB& relevantBounds, bool isA)
+		void AddGeometry(const Geometry &geom, const AABB &relevantBounds, bool isA)
 		{
 			Geometry relevant;
 
@@ -771,21 +790,29 @@ namespace fuzzybools
 
 					if (!planes[planeId].IsPointOnPlane(a))
 					{
-						if (messages) {  printf("unexpected point on plane\n"); }
+						if (messages)
+						{
+							printf("unexpected point on plane\n");
+						}
 					}
 					if (!planes[planeId].IsPointOnPlane(b))
 					{
-						if (messages) {  printf("unexpected point on plane\n"); }
+						if (messages)
+						{
+							printf("unexpected point on plane\n");
+						}
 					}
 					if (!planes[planeId].IsPointOnPlane(c))
 					{
-						if (messages) {  printf("unexpected point on plane\n"); }
+						if (messages)
+						{
+							printf("unexpected point on plane\n");
+						}
 					}
 
 					planes[planeId].AddPoint(a);
 					planes[planeId].AddPoint(b);
 					planes[planeId].AddPoint(c);
-
 
 					if (isA)
 					{
@@ -800,7 +827,10 @@ namespace fuzzybools
 				}
 				else
 				{
-					if (messages) {  printf("Degenerate face in AddGeometry\n"); }
+					if (messages)
+					{
+						printf("Degenerate face in AddGeometry\n");
+					}
 				}
 			}
 
@@ -816,7 +846,38 @@ namespace fuzzybools
 			}
 		}
 
-		std::vector<size_t> GetPointsOnPlane(Plane& p)
+		void AddSingleGeometry(const Geometry &geom)
+		{
+			for (size_t i = 0; i < geom.numFaces; i++)
+			{
+				Face tri = geom.GetFace(i);
+				auto a = geom.GetPoint(tri.i0);
+				auto b = geom.GetPoint(tri.i1);
+				auto c = geom.GetPoint(tri.i2);
+
+				glm::dvec3 norm;
+				if (computeSafeNormal(a, b, c, norm, EPS_SMALL))
+				{
+					auto ia = AddPoint(a);
+					auto ib = AddPoint(b);
+					auto ic = AddPoint(c);
+
+					double da = glm::dot(norm, a);
+					double db = glm::dot(norm, b);
+					double dc = glm::dot(norm, c);
+
+					size_t planeId = AddPlane(norm, da);
+
+					planes[planeId].AddPoint(a);
+					planes[planeId].AddPoint(b);
+					planes[planeId].AddPoint(c);
+
+					A.AddFace(planeId, ia, ib, ic);
+				}
+			}
+		}
+
+		std::vector<size_t> GetPointsOnPlane(Plane &p)
 		{
 			auto cp = planeToPoints[p.id];
 			std::sort(cp.begin(), cp.end());
@@ -825,7 +886,7 @@ namespace fuzzybools
 		}
 
 		// pair of lineID, distance
-		std::vector<std::pair<double, double>> BuildSegments(const std::vector<double>& a, const std::vector<double>& b) const
+		std::vector<std::pair<double, double>> BuildSegments(const std::vector<double> &a, const std::vector<double> &b) const
 		{
 			if (a.size() == 0 || b.size() == 0)
 			{
@@ -860,9 +921,8 @@ namespace fuzzybools
 				}
 			}
 
-			std::sort(points.begin(), points.end(), [&](const double& left, const double& right) {
-				return left < right;
-				});
+			std::sort(points.begin(), points.end(), [&](const double &left, const double &right)
+					  { return left < right; });
 
 			std::vector<std::pair<double, double>> result;
 
@@ -876,34 +936,39 @@ namespace fuzzybools
 			return result;
 		}
 
-
-		std::vector<std::pair<size_t, size_t>> GetNonIntersectingSegments(Line& l)
+		std::vector<std::pair<size_t, size_t>> GetNonIntersectingSegments(Line &l)
 		{
 			std::vector<std::pair<size_t, double>> pointsInOrder;
 
-			for (auto& segment : l.GetSegments())
+			for (auto &segment : l.GetSegments())
 			{
 				if (!l.IsPointOnLine(points[segment.first].location3D))
 				{
-					if (messages) {  printf("point not on line"); }
+					if (messages)
+					{
+						printf("point not on line");
+					}
 				}
 
 				if (!l.IsPointOnLine(points[segment.second].location3D))
 				{
-					if (messages) {  printf("point not on line"); }
+					if (messages)
+					{
+						printf("point not on line");
+					}
 				}
 
 				pointsInOrder.emplace_back(segment.first, l.GetPosOnLine(points[segment.first].location3D));
 				pointsInOrder.emplace_back(segment.second, l.GetPosOnLine(points[segment.second].location3D));
 			}
 
-			std::sort(pointsInOrder.begin(), pointsInOrder.end(), [&](const std::pair<size_t, double>& left, const std::pair<size_t, double>& right) {
-				return left.second > right.second;
-				});
+			std::sort(pointsInOrder.begin(), pointsInOrder.end(), [&](const std::pair<size_t, double> &left, const std::pair<size_t, double> &right)
+					  { return left.second > right.second; });
 
 			std::vector<std::pair<size_t, size_t>> segmentsWithoutIntersections;
 
-			if (pointsInOrder.empty()) return {};
+			if (pointsInOrder.empty())
+				return {};
 
 			size_t cur = pointsInOrder[0].first;
 			for (size_t i = 1; i < pointsInOrder.size(); i++)
@@ -921,7 +986,7 @@ namespace fuzzybools
 			return segmentsWithoutIntersections;
 		}
 
-		void TriangulatePlane(Geometry& geom, Plane& p)
+		void TriangulatePlane(Geometry &geom, Plane &p)
 		{
 			// grab all points on the plane
 			auto pointsOnPlane = GetPointsOnPlane(p);
@@ -936,7 +1001,7 @@ namespace fuzzybools
 
 			std::vector<glm::dvec2> projectedPoints;
 
-			for (auto& pointId : pointsOnPlane)
+			for (auto &pointId : pointsOnPlane)
 			{
 				pointToProjectedPoint[pointId] = projectedPoints.size();
 				projectedPointToPoint[projectedPoints.size()] = pointId;
@@ -948,17 +1013,20 @@ namespace fuzzybools
 			static int i = 0;
 			i++;
 
-			for (auto& line : p.lines)
+			for (auto &line : p.lines)
 			{
 				// these segments might intersect internally, lets resolve that so we get a valid chain
 				auto segments = GetNonIntersectingSegments(line);
 
-				for (auto& segment : segments)
+				for (auto &segment : segments)
 				{
 					if (pointToProjectedPoint.count(segment.first) == 0)
 					{
 						bool expectedOnPlane = p.IsPointOnPlane(points[segment.first].location3D);
-						if (messages) {  printf("unknown point in list, repairing"); }
+						if (messages)
+						{
+							printf("unknown point in list, repairing");
+						}
 
 						pointToProjectedPoint[segment.first] = projectedPoints.size();
 						projectedPointToPoint[projectedPoints.size()] = segment.first;
@@ -967,7 +1035,10 @@ namespace fuzzybools
 					if (pointToProjectedPoint.count(segment.second) == 0)
 					{
 						bool expectedOnPlane = p.IsPointOnPlane(points[segment.second].location3D);
-						if (messages) {  printf("unknown point in list, repairing"); }
+						if (messages)
+						{
+							printf("unknown point in list, repairing");
+						}
 
 						pointToProjectedPoint[segment.second] = projectedPoints.size();
 						projectedPointToPoint[projectedPoints.size()] = segment.second;
@@ -988,26 +1059,25 @@ namespace fuzzybools
 				{
 					std::vector<std::vector<glm::dvec2>> edgesPrinted;
 
-					for (auto& e : edges)
+					for (auto &e : edges)
 					{
-						edgesPrinted.push_back({ projectedPoints[e.first], projectedPoints[e.second] });
+						edgesPrinted.push_back({projectedPoints[e.first], projectedPoints[e.second]});
 					}
 
-					// DumpSVGLines(edgesPrinted, L"poly_" + std::to_wstring((longline.id) + L".html");
+					// DumpSVGLines(edgesPrinted, L"poly_" + std::to_wstring(line.id) + L".html");
 				}
 			}
-
 
 			CDT::Triangulation<double> cdt(CDT::VertexInsertionOrder::AsProvided);
 			std::vector<CDT::Edge> cdt_edges;
 			std::vector<CDT::V2d<double>> cdt_verts;
 
-			for (auto& point : projectedPoints)
+			for (auto &point : projectedPoints)
 			{
 				cdt_verts.emplace_back(CDT::V2d<double>::make(point.x, point.y));
 			}
 
-			for (auto& edge : edges)
+			for (auto &edge : edges)
 			{
 				cdt_edges.emplace_back((uint32_t)edge.first, (uint32_t)edge.second);
 			}
@@ -1021,9 +1091,9 @@ namespace fuzzybools
 
 			auto triangles = cdt.triangles;
 
-			//auto contourLoop = FindLargestEdgeLoop(projectedPoints, edges);
+			// auto contourLoop = FindLargestEdgeLoop(projectedPoints, edges);
 
-			for (auto& tri : triangles)
+			for (auto &tri : triangles)
 			{
 				size_t pointIdA = projectedPointToPoint[mapping[tri.vertices[0]]];
 				size_t pointIdB = projectedPointToPoint[mapping[tri.vertices[1]]];
@@ -1048,10 +1118,10 @@ namespace fuzzybools
 				}
 
 				// although CDT is great, it spits out too many or too little tris, we fix it manually
-				//if (!IsPointInsideLoop(projectedPoints, contourLoop, triCenter))
+				// if (!IsPointInsideLoop(projectedPoints, contourLoop, triCenter))
 				//{
-					//printf("removing point outside loop\n");
-					//continue;
+				// printf("removing point outside loop\n");
+				// continue;
 				//}
 
 				// TODO: why is this swapped? winding doesnt matter much, but still
@@ -1072,8 +1142,7 @@ namespace fuzzybools
 		}
 	};
 
-
-	inline void AddSegments(Plane& p, SharedPosition& sp, Line& templine, const std::vector<std::pair<double, double>>& segments)
+	inline void AddSegments(Plane &p, SharedPosition &sp, Line &templine, const std::vector<std::pair<double, double>> &segments)
 	{
 		// NOTE: this is a design flaw, the addline may return a line that is
 		// EQUIVALENT BUT NOT IDENTICAL
@@ -1081,20 +1150,26 @@ namespace fuzzybools
 		// but not necessary (but possibly) to isectLineId
 		auto isectLineId = p.AddLine(templine.origin, templine.direction);
 
-		auto& isectLine = p.lines[isectLineId.first];
+		auto &isectLine = p.lines[isectLineId.first];
 
 		if (!p.IsPointOnPlane(isectLine.origin) || !p.IsPointOnPlane(isectLine.origin + isectLine.direction * 100.))
 		{
-			if (messages) {  printf("Bad isect line"); }
+			if (messages)
+			{
+				printf("Bad isect line");
+			}
 		}
 
-		for (auto& seg : segments)
+		for (auto &seg : segments)
 		{
 			auto pos = templine.GetPosOnLine(seg.first);
 
 			if (!p.aabb.contains(pos))
 			{
-				if (messages) {  printf("making pos outside"); }
+				if (messages)
+				{
+					printf("making pos outside");
+				}
 			}
 
 			size_t ptA = sp.AddPoint(pos);
@@ -1102,14 +1177,20 @@ namespace fuzzybools
 
 			if (!p.aabb.contains(sp.points[ptA].location3D))
 			{
-				if (messages) {  printf("bad points"); }
+				if (messages)
+				{
+					printf("bad points");
+				}
 			}
 			if (!p.aabb.contains(sp.points[ptB].location3D))
 			{
-				if (messages) {  printf("bad points"); }
+				if (messages)
+				{
+					printf("bad points");
+				}
 			}
 
-			//if (ptA != ptB)
+			// if (ptA != ptB)
 			{
 				isectLine.AddPointToLine(isectLine.GetPosOnLine(sp.points[ptA].location3D), ptA);
 				isectLine.AddPointToLine(isectLine.GetPosOnLine(sp.points[ptB].location3D), ptB);
@@ -1117,27 +1198,32 @@ namespace fuzzybools
 
 			if (!p.IsPointOnPlane(sp.points[ptA].location3D))
 			{
-				if (messages) {  printf("bad point"); }
+				if (messages)
+				{
+					printf("bad point");
+				}
 			}
 			if (!p.IsPointOnPlane(sp.points[ptB].location3D))
 			{
-				if (messages) {  printf("bad point"); }
+				if (messages)
+				{
+					printf("bad point");
+				}
 			}
-
 
 			sp.AddRefPlaneToPoint(ptA, p.id);
 			sp.AddRefPlaneToPoint(ptB, p.id);
 		}
 	}
 
-	inline std::vector<double> ComputeInitialIntersections(Plane& p, SharedPosition& sp, const Line& lineA)
+	inline std::vector<double> ComputeInitialIntersections(Plane &p, SharedPosition &sp, const Line &lineA)
 	{
 		double size = 10000; // TODO: this is bad
-		
-		for (auto& point : sp.points)
+
+		for (auto &point : sp.points)
 		{
 			double d = glm::distance(lineA.origin, point.location3D);
-			if(size < d)
+			if (size < d)
 			{
 				size = d;
 			}
@@ -1149,25 +1235,32 @@ namespace fuzzybools
 		std::vector<double> distances;
 
 		// line B is expected to have the segments already filled, line A is not
-		for (auto& line : p.lines)
+		for (auto &line : p.lines)
 		{
 			// skip colinear
-			if (lineA.IsColinear(line)) continue;
+			if (lineA.IsColinear(line))
+				continue;
 
-			for (const auto& seg : line.GetSegments())
+			for (const auto &seg : line.GetSegments())
 			{
 				auto result = LineLineIntersection(Astart, Aend,
-					sp.points[seg.first].location3D, sp.points[seg.second].location3D);
+												   sp.points[seg.first].location3D, sp.points[seg.second].location3D);
 
 				if (result.distance < SCALED_EPS_BIG)
 				{
 					if (!p.aabb.contains(sp.points[seg.first].location3D))
 					{
-						if (messages) {  printf("bad points"); }
+						if (messages)
+						{
+							printf("bad points");
+						}
 					}
 					if (!p.aabb.contains(sp.points[seg.second].location3D))
 					{
-						if (messages) {  printf("bad points"); }
+						if (messages)
+						{
+							printf("bad points");
+						}
 					}
 
 					// intersection, mark index of line B and distance on line A
@@ -1176,50 +1269,57 @@ namespace fuzzybools
 
 					if (!p.aabb.contains(result.point2))
 					{
-						if (messages) {  printf("bad points"); }
+						if (messages)
+						{
+							printf("bad points");
+						}
 					}
 
 					if (!equals(pt, result.point2, SCALED_EPS_BIG))
 					{
-						if (messages) {  printf("BAD POINT"); }
+						if (messages)
+						{
+							printf("BAD POINT");
+						}
 					}
 				}
 			}
 		}
 
-		std::sort(distances.begin(), distances.end(), [&](const double& left, const double& right) {
-			return left < right;
-			});
+		std::sort(distances.begin(), distances.end(), [&](const double &left, const double &right)
+				  { return left < right; });
 
 		distances.erase(std::unique(distances.begin(), distances.end()), distances.end());
 
 		return distances;
 	}
 
-	inline void AddLineLineIntersections(Plane& p, SharedPosition& sp, Line& lineA, Line& lineB)
+	inline void AddLineLineIntersections(Plane &p, SharedPosition &sp, Line &lineA, Line &lineB)
 	{
-		for (auto& segA : lineA.GetSegments())
+		for (auto &segA : lineA.GetSegments())
 		{
-			for (auto& segB : lineB.GetSegments())
+			for (auto &segB : lineB.GetSegments())
 			{
 				// check isect A vs B
 				if (!p.HasOverlap(segA, segB))
 				{
 					// no overlap, possibility of intersection
 					auto result = LineLineIntersection(sp.points[segA.first].location3D, sp.points[segA.second].location3D,
-						sp.points[segB.first].location3D, sp.points[segB.second].location3D);
+													   sp.points[segB.first].location3D, sp.points[segB.second].location3D);
 
 					if (result.distance < SCALED_EPS_BIG)
 					{
 						// intersection! Take center and insert
 						if (!p.aabb.contains(result.point1))
 						{
-							if (messages) {  printf("bad points"); }
+							if (messages)
+							{
+								printf("bad points");
+							}
 							continue;
 						}
 
 						size_t point = sp.AddPoint((result.point1));
-
 
 						lineA.AddPointToLine(lineA.GetPosOnLine(sp.points[point].location3D), point);
 						lineB.AddPointToLine(lineB.GetPosOnLine(sp.points[point].location3D), point);
@@ -1234,7 +1334,7 @@ namespace fuzzybools
 
 							// TODO: FIX THIS POINT MIGHT NOT BE ON THE PLANE ACTUALLY
 
-							for (auto& plane : lineA.planes)
+							for (auto &plane : lineA.planes)
 							{
 								sp.AddRefPlaneToPoint(point, plane.planeID);
 							}
@@ -1246,7 +1346,7 @@ namespace fuzzybools
 							ref.location = lineB.GetPosOnLine(result.point2);
 							sp.points[point].lines.push_back(ref);
 
-							for (auto& plane : lineB.planes)
+							for (auto &plane : lineB.planes)
 							{
 								sp.AddRefPlaneToPoint(point, plane.planeID);
 							}
@@ -1257,7 +1357,7 @@ namespace fuzzybools
 		}
 	}
 
-	inline void AddLineLineIsects(Plane& p, SharedPosition& sp)
+	inline void AddLineLineIsects(Plane &p, SharedPosition &sp)
 	{
 		for (size_t lineAIndex = 0; lineAIndex < p.lines.size(); lineAIndex++)
 		{
@@ -1268,30 +1368,30 @@ namespace fuzzybools
 		}
 	}
 
-	inline Geometry Normalize(SharedPosition& sp)
+	inline Geometry Normalize(SharedPosition &sp)
 	{
 		// construct all contours, derive lines
 		auto contoursA = sp.A.GetContourSegments();
 
-		for (auto& [planeId, contours] : contoursA)
+		for (auto &[planeId, contours] : contoursA)
 		{
 			std::vector<std::vector<glm::dvec2>> edges;
 
-			Plane& p = sp.planes[planeId];
+			Plane &p = sp.planes[planeId];
 
 			if (false)
 			{
 				auto basis = p.MakeBasis();
 
-				for (auto& segment : contours)
+				for (auto &segment : contours)
 				{
-					edges.push_back({ basis.project(sp.points[segment.first].location3D), basis.project(sp.points[segment.second].location3D) });
+					edges.push_back({basis.project(sp.points[segment.first].location3D), basis.project(sp.points[segment.second].location3D)});
 				}
 
 				DumpSVGLines(edges, L"contour.html");
 			}
 
-			for (auto& segment : contours)
+			for (auto &segment : contours)
 			{
 				auto lineId = sp.planes[planeId].AddLine(sp.points[segment.first], sp.points[segment.second]);
 			}
@@ -1299,18 +1399,18 @@ namespace fuzzybools
 
 		auto contoursB = sp.B.GetContourSegments();
 
-		for (auto& [planeId, contours] : contoursB)
+		for (auto &[planeId, contours] : contoursB)
 		{
-			for (auto& segment : contours)
+			for (auto &segment : contours)
 			{
 				auto lineId = sp.planes[planeId].AddLine(sp.points[segment.first], sp.points[segment.second]);
 			}
 		}
 
 		// put all points on lines/planes
-		for (auto& p : sp.points)
+		for (auto &p : sp.points)
 		{
-			for (auto& plane : sp.planes)
+			for (auto &plane : sp.planes)
 			{
 				if (plane.IsPointOnPlane(p.location3D))
 				{
@@ -1320,7 +1420,7 @@ namespace fuzzybools
 			}
 		}
 
-		for (auto& plane : sp.planes)
+		for (auto &plane : sp.planes)
 		{
 			AddLineLineIsects(plane, sp);
 		}
@@ -1332,8 +1432,8 @@ namespace fuzzybools
 			{
 				for (size_t planeBIndex = 0; planeBIndex < sp.planes.size(); planeBIndex++)
 				{
-					auto& planeA = sp.planes[planeAIndex];
-					auto& planeB = sp.planes[planeBIndex];
+					auto &planeA = sp.planes[planeAIndex];
+					auto &planeB = sp.planes[planeBIndex];
 
 					if (!planeA.aabb.intersects(planeB.aabb))
 					{
@@ -1360,11 +1460,17 @@ namespace fuzzybools
 
 					if (!planeA.IsPointOnPlane(intersectionLine.origin) || !planeA.IsPointOnPlane(intersectionLine.origin + intersectionLine.direction * 1000.))
 					{
-						if (messages) {  printf("Bad isect line"); }
+						if (messages)
+						{
+							printf("Bad isect line");
+						}
 					}
 					if (!planeB.IsPointOnPlane(intersectionLine.origin) || !planeB.IsPointOnPlane(intersectionLine.origin + intersectionLine.direction * 1000.))
 					{
-						if (messages) {  printf("Bad isect line"); }
+						if (messages)
+						{
+							printf("Bad isect line");
+						}
 					}
 
 					// get all intersection points with the shared line and both planes
@@ -1388,14 +1494,14 @@ namespace fuzzybools
 			}
 		}
 
-		for (auto& plane : sp.planes)
+		for (auto &plane : sp.planes)
 		{
 			AddLineLineIsects(plane, sp);
 		}
 
-		for (auto& p : sp.points)
+		for (auto &p : sp.points)
 		{
-			for (auto& plane : sp.planes)
+			for (auto &plane : sp.planes)
 			{
 				if (plane.IsPointOnPlane(p.location3D))
 				{
@@ -1409,15 +1515,15 @@ namespace fuzzybools
 		// this mesh itself is not a boolean result, but rather a merging of all operands
 
 		Geometry geom;
-		for (auto& plane : sp.planes)
+		for (auto &plane : sp.planes)
 		{
 			sp.TriangulatePlane(geom, plane);
 		}
 
 		// re-add irrelevant faces
-		for (auto& faceIndex : sp.A.irrelevantFaces)
+		for (auto &faceIndex : sp.A.irrelevantFaces)
 		{
-			const Face& f = sp._linkedA->GetFace(faceIndex);
+			const Face &f = sp._linkedA->GetFace(faceIndex);
 
 			auto a = sp._linkedA->GetPoint(f.i0);
 			auto b = sp._linkedA->GetPoint(f.i1);
@@ -1426,9 +1532,9 @@ namespace fuzzybools
 			geom.AddFace(a, b, c);
 		}
 
-		for (auto& faceIndex : sp.B.irrelevantFaces)
+		for (auto &faceIndex : sp.B.irrelevantFaces)
 		{
-			const Face& f = sp._linkedB->GetFace(faceIndex);
+			const Face &f = sp._linkedB->GetFace(faceIndex);
 
 			auto a = sp._linkedB->GetPoint(f.i0);
 			auto b = sp._linkedB->GetPoint(f.i1);
