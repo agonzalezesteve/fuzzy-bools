@@ -36,22 +36,44 @@ namespace fuzzybools
 		return fuzzybools::BooleanResult(BooleanOperator::DIFFERENCE, A, B);
 	}
 
-	inline std::pair<Geometry, Geometry> SplitBoundriesInIntersectionAndDifference(const Geometry &A, const Geometry &B)
+	struct GeometryWithId
 	{
-		fuzzybools::SharedPosition sp;
-		sp.Construct(A, B);
+		size_t id;
+		Geometry geometry;
+	};
 
-		auto bvh1 = fuzzybools::MakeBVH(A);
-		auto bvh2 = fuzzybools::MakeBVH(B);
-
-		auto geom = Normalize(sp);
-
-		return fuzzybools::SplitBoundaryInIntersectionAndDifference(geom, bvh1, bvh2);
-	}
-
-	std::vector<Geometry> SplitUnionGeometryInSpacesGeometries(const Geometry &unionGeom)
+	struct BuildingElement : GeometryWithId
 	{
-		std::vector<Geometry> spaceGeoms;
+		float thickness;
+		std::vector<size_t> firstLevelBoundaries;
+	};
+
+	struct SpaceOrBuilding : GeometryWithId
+	{
+		bool isSpace;
+	};
+
+	struct FirstLevelBoundary : GeometryWithId
+	{
+		size_t buildingElement;
+		size_t space;
+	};
+
+	enum class BoundaryType
+	{
+		INTERNAL,
+		EXTERNAL,
+		NOTDEFINED
+	};
+
+	struct SecondLevelBoundary : FirstLevelBoundary
+	{
+		BoundaryType boundaryType;
+	};
+
+	std::vector<SpaceOrBuilding> GetSpacesAndBuildings(const Geometry &unionGeom)
+	{
+		std::vector<SpaceOrBuilding> spacesAndBuildings;
 
 		fuzzybools::SharedPosition sp;
 		sp.AddSingleGeometry(unionGeom);
@@ -63,7 +85,7 @@ namespace fuzzybools
 			if (visited[triangleId])
 				continue;
 
-			Geometry spaceGeom;
+			Geometry spaceOrBuildingGeom;
 			std::queue<size_t> q;
 			q.push(triangleId);
 
@@ -80,7 +102,7 @@ namespace fuzzybools
 				glm::dvec3 a = sp.points[triangle.a].location3D;
 				glm::dvec3 b = sp.points[triangle.b].location3D;
 				glm::dvec3 c = sp.points[triangle.c].location3D;
-				spaceGeom.AddFace(a, b, c);
+				spaceOrBuildingGeom.AddFace(a, b, c);
 
 				for (const auto &neigthbourTriangle : sp.A.GetNeighbourTriangles(triangle))
 				{
@@ -95,14 +117,28 @@ namespace fuzzybools
 				}
 			}
 
-			if (spaceGeom.Volume() < 0)
-			{
-				spaceGeom.Flip();
-				spaceGeoms.push_back(spaceGeom);
-			}
+			SpaceOrBuilding spaceOrBuilding;
+			spaceOrBuilding.id = spacesAndBuildings.size();
+			spaceOrBuilding.geometry = spaceOrBuildingGeom;
+			spaceOrBuilding.isSpace = (spaceOrBuildingGeom.Volume() < 0);
+
+			spacesAndBuildings.push_back(spaceOrBuilding);
 		}
 
-		return spaceGeoms;
+		return spacesAndBuildings;
+	}
+
+	inline std::pair<Geometry, Geometry> SplitBoundariesInIntersectionAndDifference(const Geometry &A, const Geometry &B)
+	{
+		fuzzybools::SharedPosition sp;
+		sp.Construct(A, B);
+
+		auto bvh1 = fuzzybools::MakeBVH(A);
+		auto bvh2 = fuzzybools::MakeBVH(B);
+
+		auto geom = Normalize(sp);
+
+		return fuzzybools::SplitBoundaryInIntersectionAndDifference(geom, bvh1, bvh2);
 	}
 
 	std::vector<Geometry> SplitGeometryByContiguousAndCoplanarFaces(const Geometry &geom)
@@ -163,41 +199,32 @@ namespace fuzzybools
 		return newGeoms;
 	}
 
-	std::vector<Geometry> GetSpacesGeomsByBuildingElementsGeoms(const std::vector<Geometry> &buildingElementsGeoms)
+	std::vector<FirstLevelBoundary> GetFirstLevelBoundaries(std::vector<BuildingElement> &buildingElements, const std::vector<SpaceOrBuilding> &spaceAndBuildings)
 	{
-		Geometry unionGeom;
-		for (auto &buildingElementsGeom : buildingElementsGeoms)
+		std::vector<FirstLevelBoundary> firstLevelBoundaries;
+
+		for (size_t spaceId = 0; spaceId < spaceAndBuildings.size(); spaceId++)
 		{
-			unionGeom = Union(buildingElementsGeom, unionGeom);
-		}
+			auto geom = spaceAndBuildings[spaceId].geometry;
 
-		std::vector<Geometry> spaceGeoms = SplitUnionGeometryInSpacesGeometries(unionGeom);
-
-		int k = 0;
-
-		std::vector<std::pair<size_t, Geometry>> firstLevelBoundaries[buildingElementsGeoms.size()];
-		for (size_t j = 0; j < spaceGeoms.size(); j++)
-		{
-			auto geom = spaceGeoms[j];
-
-			size_t spaceOffset = 0;
-			std::ofstream spaceOfs("Space_" + std::to_string(j) + ".obj", std::ofstream::out);
-			spaceOfs << fuzzybools::ToObj(geom, spaceOffset);
-			spaceOfs.close();
-
-			for (size_t i = 0; i < buildingElementsGeoms.size(); i++)
+			for (size_t buildingElementId = 0; buildingElementId < buildingElements.size(); buildingElementId++)
 			{
-				auto intersectionAndDifferenceGeom = SplitBoundriesInIntersectionAndDifference(geom, buildingElementsGeoms[i]);
+				auto intersectionAndDifferenceGeom = SplitBoundariesInIntersectionAndDifference(geom, buildingElements[buildingElementId].geometry);
 				for (auto firstLevelBoundaryGeom : SplitGeometryByContiguousAndCoplanarFaces(intersectionAndDifferenceGeom.first))
 				{
 					size_t firstOffset = 0;
-					std::ofstream firstOfs("First_" + std::to_string(k) + ".obj", std::ofstream::out);
+					std::ofstream firstOfs("First_Space" + std::to_string(spaceId) + "_BuildingElement" + std::to_string(buildingElementId) + ".obj", std::ofstream::out);
 					firstOfs << fuzzybools::ToObj(firstLevelBoundaryGeom, firstOffset);
 					firstOfs.close();
 
-					++k;
+					FirstLevelBoundary firstLevelBoundary;
+					firstLevelBoundary.id = firstLevelBoundaries.size();
+					firstLevelBoundary.geometry = firstLevelBoundaryGeom;
+					firstLevelBoundary.buildingElement = buildingElementId;
+					firstLevelBoundary.space = spaceId;
 
-					firstLevelBoundaries[i].emplace_back(j, firstLevelBoundaryGeom);
+					firstLevelBoundaries.push_back(firstLevelBoundary);
+					buildingElements[buildingElementId].firstLevelBoundaries.push_back(firstLevelBoundary.id);
 				}
 
 				geom = intersectionAndDifferenceGeom.second;
@@ -206,8 +233,23 @@ namespace fuzzybools
 			}
 		}
 
-		std::cout << k << std::endl;
+		return firstLevelBoundaries;
+	}
 
-		return spaceGeoms;
+	void GetSpacesGeomsByBuildingElementsGeoms(const std::vector<Geometry> &buildingElementsGeoms)
+	{
+		std::vector<BuildingElement> buildingElements(buildingElementsGeoms.size());
+
+		Geometry unionGeom;
+		for (size_t buildingElementId = 0; buildingElementId < buildingElementsGeoms.size(); buildingElementId++)
+		{
+			buildingElements[buildingElementId].id = buildingElementId;
+			buildingElements[buildingElementId].geometry = buildingElementsGeoms[buildingElementId];
+
+			unionGeom = Union(buildingElements[buildingElementId].geometry, unionGeom);
+		}
+
+		auto spacesAndBuildings = GetSpacesAndBuildings(unionGeom);
+		auto firstLevelBoundaries = GetFirstLevelBoundaries(buildingElements, spacesAndBuildings);
 	}
 }
