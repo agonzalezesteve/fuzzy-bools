@@ -281,10 +281,44 @@ namespace fuzzybools
 		{
 			for (uint32_t i = 0; i < numFaces; i++)
 			{
-				auto temp = indexData[3*i];
-				indexData[3*i] = indexData[3*i+1];
-				indexData[3*i+1] = temp;
+				auto temp = indexData[3 * i];
+				indexData[3 * i] = indexData[3 * i + 1];
+				indexData[3 * i + 1] = temp;
 			}
+		}
+
+		Geometry Translate(const glm::dvec3 vector)
+		{
+			Geometry newGeom;
+
+			for (size_t i = 0; i < numFaces; i++)
+			{
+				auto face = GetFace(i);
+				auto a = GetPoint(face.i0);
+				auto b = GetPoint(face.i1);
+				auto c = GetPoint(face.i2);
+
+				newGeom.AddFace(a + vector, b + vector, c + vector);
+			}
+
+			return newGeom;
+		}
+
+		double Area() const
+		{
+			double area = 0;
+
+			for (uint32_t i = 0; i < numFaces; i++)
+			{
+				Face f = GetFace(i);
+				glm::dvec3 a = glm::dvec4(GetPoint(f.i0), 1);
+				glm::dvec3 b = glm::dvec4(GetPoint(f.i1), 1);
+				glm::dvec3 c = glm::dvec4(GetPoint(f.i2), 1);
+
+				area += areaOfTriangle(a, b, c);
+			}
+
+			return area;
 		}
 	};
 }
