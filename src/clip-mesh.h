@@ -114,9 +114,9 @@ namespace fuzzybools
         return booleanResult;
     }
 
-    static std::pair<Geometry, Geometry> SplitBoundaryInIntersectionAndDifference(Geometry &mesh, BVH &bvh1, BVH &bvh2)
+    static std::pair<Geometry, std::pair<Geometry, Geometry>> SplitFirstBoundary(Geometry &mesh, BVH &bvh1, BVH &bvh2)
     {
-        std::pair<Geometry, Geometry> intersectionAndDifferenceGeom;
+        std::pair<Geometry, std::pair<Geometry, Geometry>> result;
 
         for (uint32_t i = 0; i < mesh.numFaces; i++)
         {
@@ -134,32 +134,49 @@ namespace fuzzybools
             {
                 auto dot = glm::dot(n, isInside1Result.normal);
 
-                if (isInside2Result.loc == MeshLocation::BOUNDARY)
+                switch (isInside2Result.loc)
+                {
+                case MeshLocation::BOUNDARY:
                 {
                     if (dot < 0)
                     {
-                        intersectionAndDifferenceGeom.first.AddFace(b, a, c);
+                        result.first.AddFace(b, a, c);
                     }
                     else
                     {
-                        intersectionAndDifferenceGeom.first.AddFace(a, b, c);
+                        result.first.AddFace(a, b, c);
+                    }
+                    break;
+                }
+                case MeshLocation::OUTSIDE:
+                {
+                    if (dot < 0)
+                    {
+                        result.second.first.AddFace(b, a, c);
+                    }
+                    else
+                    {
+                        result.second.first.AddFace(a, b, c);
+                    }
+                    break;
+                }
+                case MeshLocation::INSIDE:
+                {
+                    if (dot < 0)
+                    {
+                        result.second.second.AddFace(b, a, c);
+                    }
+                    else
+                    {
+                        result.second.second.AddFace(a, b, c);
                     }
                 }
-                else
-                {
-                    if (dot < 0)
-                    {
-                        intersectionAndDifferenceGeom.second.AddFace(b, a, c);
-                    }
-                    else
-                    {
-                        intersectionAndDifferenceGeom.second.AddFace(a, b, c);
-                    }
-
+                default:
+                    break;
                 }
             }
         }
 
-        return intersectionAndDifferenceGeom;
+        return result;
     }
 }
