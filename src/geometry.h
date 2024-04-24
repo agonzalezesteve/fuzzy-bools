@@ -244,7 +244,7 @@ namespace fuzzybools
 			return newGeom;
 		}
 
-		bool IsEmpty()
+		bool IsEmpty() const
 		{
 			return vertexData.empty();
 		}

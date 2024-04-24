@@ -61,6 +61,33 @@ namespace fuzzybools
 		size_t space;
 	};
 
+	enum class BoundaryCondition
+	{
+		INTERNAL,
+		EXTERNAL,
+		NOTDEFINED
+	};
+
+	struct SecondLevelBoundary : FirstLevelBoundary
+	{
+		BoundaryCondition boundaryCondition;
+
+		std::string BoundaryCondition()
+		{
+			switch (boundaryCondition)
+			{
+			case BoundaryCondition::INTERNAL:
+				return "INTERNAL";
+			case BoundaryCondition::EXTERNAL:
+				return "EXTERNAL";
+			case BoundaryCondition::NOTDEFINED:
+				return "NOTDEFINED";
+			default:
+				return "UNKNOWN";
+			}
+		}
+	};
+
 	std::vector<SpaceOrBuilding> GetSpacesAndBuildings(const Geometry &unionGeom)
 	{
 		std::vector<SpaceOrBuilding> spacesAndBuildings;
@@ -134,6 +161,8 @@ namespace fuzzybools
 	std::vector<Geometry> SplitGeometryByContiguousAndCoplanarFaces(const Geometry &geom)
 	{
 		std::vector<Geometry> newGeoms;
+		if (geom.IsEmpty())
+			return newGeoms;
 
 		fuzzybools::SharedPosition sp;
 		sp.AddSingleGeometry(geom);
@@ -230,24 +259,24 @@ namespace fuzzybools
 		return firstLevelBoundaries;
 	}
 
-	std::vector<FirstLevelBoundary> GetSecondLevelBoundaries(std::vector<BuildingElement> &buildingElements, const std::vector<FirstLevelBoundary> &firstLevelBoundaries)
+	std::vector<SecondLevelBoundary> GetSecondLevelBoundaries(std::vector<BuildingElement> &buildingElements, const std::vector<SpaceOrBuilding> &spaceAndBuildings, std::vector<FirstLevelBoundary> &firstLevelBoundaries)
 	{
-		std::vector<FirstLevelBoundary> secondLevelBoundaries;
+		std::vector<SecondLevelBoundary> secondLevelBoundaries;
 
 		for (size_t buildingElementId = 0; buildingElementId < buildingElements.size(); buildingElementId++)
 		{
-			BuildingElement buildingElement = buildingElements[buildingElementId];
+			auto &buildingElement = buildingElements[buildingElementId];
 
 			double maxArea = -1.0;
 			for (int i = 0; i < buildingElement.firstLevelBoundaries.size(); i++)
-			{
-				FirstLevelBoundary firstLevelBoundary = firstLevelBoundaries[buildingElement.firstLevelBoundaries[i]];
+			{	
+				auto &firstLevelBoundary = firstLevelBoundaries[buildingElement.firstLevelBoundaries[i]];
 				if (firstLevelBoundary.geometry.IsEmpty())
-					break;
+					continue;
 
 				for (int j = i + 1; j < buildingElement.firstLevelBoundaries.size(); j++)
 				{
-					FirstLevelBoundary otherFirstLevelBoundary = firstLevelBoundaries[buildingElement.firstLevelBoundaries[j]];
+					auto &otherFirstLevelBoundary = firstLevelBoundaries[buildingElement.firstLevelBoundaries[j]];
 					if (glm::dot(firstLevelBoundary.normal, otherFirstLevelBoundary.normal) + 1 > EPS_SMALL)
 						continue;
 
@@ -259,23 +288,27 @@ namespace fuzzybools
 
 					for (auto secondLevelBoundaryGeom : SplitGeometryByContiguousAndCoplanarFaces(intersectionAndDifferenceGeoms.first))
 					{
-						FirstLevelBoundary secondLevelBoundary;
+						BoundaryCondition boundaryCondition = ((!spaceAndBuildings[firstLevelBoundary.space].isSpace || !spaceAndBuildings[otherFirstLevelBoundary.space].isSpace) ? BoundaryCondition::EXTERNAL : BoundaryCondition::INTERNAL);
+
+						SecondLevelBoundary secondLevelBoundary;
 						secondLevelBoundary.id = secondLevelBoundaries.size();
 						secondLevelBoundary.geometry = secondLevelBoundaryGeom;
-						secondLevelBoundary.point = firstLevelBoundary.point;
+						secondLevelBoundary.point = secondLevelBoundary.geometry.GetPoint(secondLevelBoundary.geometry.GetFace(0).i0);
 						secondLevelBoundary.normal = firstLevelBoundary.normal;
 						secondLevelBoundary.buildingElement = buildingElementId;
 						secondLevelBoundary.space = firstLevelBoundary.space;
+						secondLevelBoundary.boundaryCondition = boundaryCondition;
 						secondLevelBoundaries.push_back(secondLevelBoundary);
 
-						FirstLevelBoundary otherSecondLevelBoundary;
+						SecondLevelBoundary otherSecondLevelBoundary;
 						otherSecondLevelBoundary.id = secondLevelBoundaries.size();
 						otherSecondLevelBoundary.geometry = secondLevelBoundary.geometry.Translate((float)distance * otherFirstLevelBoundary.normal);
 						otherSecondLevelBoundary.geometry.Flip();
-						otherSecondLevelBoundary.point = otherFirstLevelBoundary.point;
+						otherSecondLevelBoundary.point = otherSecondLevelBoundary.geometry.GetPoint(otherSecondLevelBoundary.geometry.GetFace(0).i0);
 						otherSecondLevelBoundary.normal = otherFirstLevelBoundary.normal;
 						otherSecondLevelBoundary.buildingElement = buildingElementId;
 						otherSecondLevelBoundary.space = otherFirstLevelBoundary.space;
+						otherSecondLevelBoundary.boundaryCondition = boundaryCondition;
 						secondLevelBoundaries.push_back(otherSecondLevelBoundary);
 
 						auto area = secondLevelBoundary.geometry.Area();
@@ -292,6 +325,57 @@ namespace fuzzybools
 
 					if (firstLevelBoundary.geometry.IsEmpty())
 						break;
+				}
+
+				for (auto secondLevelBoundaryGeom : SplitGeometryByContiguousAndCoplanarFaces(firstLevelBoundary.geometry))
+				{
+					SecondLevelBoundary secondLevelBoundary;
+					secondLevelBoundary.id = secondLevelBoundaries.size();
+					secondLevelBoundary.geometry = secondLevelBoundaryGeom;
+					secondLevelBoundary.point = secondLevelBoundary.geometry.GetPoint(secondLevelBoundary.geometry.GetFace(0).i0);
+					secondLevelBoundary.normal = firstLevelBoundary.normal;
+					secondLevelBoundary.buildingElement = buildingElementId;
+					secondLevelBoundary.space = firstLevelBoundary.space;
+					secondLevelBoundary.boundaryCondition = BoundaryCondition::NOTDEFINED;
+					secondLevelBoundaries.push_back(secondLevelBoundary);
+				}
+			}
+
+			int secondLevelBoundaryId = secondLevelBoundaries.size() - 1;
+			while (secondLevelBoundaryId >= 0)
+			{
+				auto &secondLevelBoundary = secondLevelBoundaries[secondLevelBoundaryId];
+				if (secondLevelBoundary.buildingElement != buildingElementId)
+					break;
+
+				switch (secondLevelBoundary.boundaryCondition)
+				{
+				case BoundaryCondition::INTERNAL:
+				{
+					auto &otherSecondLevelBoundary = secondLevelBoundaries[secondLevelBoundaryId - 1];
+					double internalDistance = glm::dot(otherSecondLevelBoundary.normal, otherSecondLevelBoundary.point) - glm::dot(otherSecondLevelBoundary.normal, secondLevelBoundary.point);
+					if (std::fabs(internalDistance - buildingElements[buildingElementId].thickness) > EPS_SMALL)
+					{
+						secondLevelBoundary.boundaryCondition = BoundaryCondition::NOTDEFINED;
+						otherSecondLevelBoundary.boundaryCondition = BoundaryCondition::NOTDEFINED;
+					}
+
+					secondLevelBoundaryId -= 2;
+					break;
+				}
+				case BoundaryCondition::EXTERNAL:
+				{
+					secondLevelBoundaryId -= 2;
+					break;
+				}
+				case BoundaryCondition::NOTDEFINED:
+				{
+					secondLevelBoundaryId -= 1;
+					break;
+				}
+				default:
+					secondLevelBoundaryId -= 1;
+					break;
 				}
 			}
 		}
@@ -314,7 +398,7 @@ namespace fuzzybools
 
 		auto spacesAndBuildings = GetSpacesAndBuildings(unionGeom);
 		auto firstLevelBoundaries = GetFirstLevelBoundaries(buildingElements, spacesAndBuildings);
-		auto secondLevelBoundaries = GetSecondLevelBoundaries(buildingElements, firstLevelBoundaries);
+		auto secondLevelBoundaries = GetSecondLevelBoundaries(buildingElements, spacesAndBuildings, firstLevelBoundaries);
 
 		for (int i = 0; i < spacesAndBuildings.size(); i++)
 		{
@@ -333,15 +417,51 @@ namespace fuzzybools
 			std::cout << firstLevelBoundary.id << ", " << firstLevelBoundary.buildingElement << ", " << firstLevelBoundary.space << std::endl;
 		}
 
-		for (int i = 0; i < secondLevelBoundaries.size(); i += 2)
+		int secondLevelBoundaryId = 0;
+		while (secondLevelBoundaryId < secondLevelBoundaries.size())
 		{
-			auto secondLevelBoundary = secondLevelBoundaries[i];
-			auto otherSecondLevelBoundary = secondLevelBoundaries[i + 1];
+			auto secondLevelBoundary = secondLevelBoundaries[secondLevelBoundaryId];
 
-			double distance = glm::dot(secondLevelBoundary.normal, secondLevelBoundary.point) - glm::dot(secondLevelBoundary.normal, otherSecondLevelBoundary.point);
+			switch (secondLevelBoundary.boundaryCondition)
+			{
+			case BoundaryCondition::INTERNAL:
+			{
+				auto otherSecondLevelBoundary = secondLevelBoundaries[secondLevelBoundaryId + 1];
 
-			std::cout << secondLevelBoundary.id << ", " << secondLevelBoundary.buildingElement << ", " << secondLevelBoundary.space << ", " << distance << std::endl;
-			std::cout << otherSecondLevelBoundary.id << ", " << otherSecondLevelBoundary.buildingElement << ", " << otherSecondLevelBoundary.space << ", " << distance << std::endl;
+				std::cout << secondLevelBoundary.id << ", " << secondLevelBoundary.buildingElement << ", " << secondLevelBoundary.space << ", " << secondLevelBoundary.BoundaryCondition() << std::endl;
+				std::cout << otherSecondLevelBoundary.id << ", " << otherSecondLevelBoundary.buildingElement << ", " << otherSecondLevelBoundary.space << ", " << otherSecondLevelBoundary.BoundaryCondition() << std::endl;
+
+				secondLevelBoundaryId += 2;
+				break;
+			}
+			case BoundaryCondition::EXTERNAL:
+			{
+				if (spacesAndBuildings[secondLevelBoundary.space].isSpace) {
+					std::cout << secondLevelBoundary.id << ", " << secondLevelBoundary.buildingElement << ", " << secondLevelBoundary.space << ", " << secondLevelBoundary.BoundaryCondition() << std::endl;
+				}
+
+				auto otherSecondLevelBoundary = secondLevelBoundaries[secondLevelBoundaryId + 1];
+				if (spacesAndBuildings[otherSecondLevelBoundary.space].isSpace) {
+					std::cout << otherSecondLevelBoundary.id << ", " << otherSecondLevelBoundary.buildingElement << ", " << otherSecondLevelBoundary.space << ", " << otherSecondLevelBoundary.BoundaryCondition() << std::endl;
+				}
+
+
+				secondLevelBoundaryId += 2;
+				break;
+			}
+			case BoundaryCondition::NOTDEFINED:
+			{
+				if (spacesAndBuildings[secondLevelBoundary.space].isSpace) {
+					std::cout << secondLevelBoundary.id << ", " << secondLevelBoundary.buildingElement << ", " << secondLevelBoundary.space << ", " << secondLevelBoundary.BoundaryCondition() << std::endl;
+				}
+
+				secondLevelBoundaryId += 1;
+				break;
+			}
+			default:
+				secondLevelBoundaryId += 1;
+				break;
+			}
 		}
 	}
 }
