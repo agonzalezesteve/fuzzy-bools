@@ -472,6 +472,32 @@ namespace fuzzybools
 		return secondLevelBoundaries;
 	}
 
+	std::vector<std::vector<glm::dvec3>> SplitGeometryInClosedWires(const Geometry &A)
+	{
+		std::vector<std::vector<glm::dvec3>> wires;
+
+		for (auto contiguousAndCoplanarFaces : SplitGeometryByContiguousAndCoplanarFaces(A))
+		{
+			std::vector<glm::dvec3> wire;
+
+			fuzzybools::SharedPosition sp;
+			sp.AddSingleGeometry(contiguousAndCoplanarFaces);
+
+			auto contoursA = sp.A.GetContourSegments();
+			for (auto &[planeId, contours] : contoursA)
+			{
+				for (auto &segment : contours)
+				{
+					wire.push_back(sp.points[segment.first].location3D);
+				}
+			}
+
+			wires.push_back(wire);
+		}
+
+		return wires;
+	}
+
 	void GetSpacesGeomsByBuildingElements(std::vector<BuildingElement> &buildingElements)
 	{
 		Geometry unionGeom;

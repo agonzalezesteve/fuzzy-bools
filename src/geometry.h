@@ -249,6 +249,23 @@ namespace fuzzybools
 			return vertexData.empty();
 		}
 
+		double Area() const
+		{
+			double area = 0;
+
+			for (uint32_t i = 0; i < numFaces; i++)
+			{
+				Face f = GetFace(i);
+				glm::dvec3 a = glm::dvec4(GetPoint(f.i0), 1);
+				glm::dvec3 b = glm::dvec4(GetPoint(f.i1), 1);
+				glm::dvec3 c = glm::dvec4(GetPoint(f.i2), 1);
+
+				area += areaOfTriangle(a, b, c);
+			}
+
+			return area;
+		}
+
 		double Volume(const glm::dmat4 &trans = glm::dmat4(1)) const
 		{
 			double totalVolume = 0;
@@ -302,23 +319,6 @@ namespace fuzzybools
 			}
 
 			return newGeom;
-		}
-
-		double Area() const
-		{
-			double area = 0;
-
-			for (uint32_t i = 0; i < numFaces; i++)
-			{
-				Face f = GetFace(i);
-				glm::dvec3 a = glm::dvec4(GetPoint(f.i0), 1);
-				glm::dvec3 b = glm::dvec4(GetPoint(f.i1), 1);
-				glm::dvec3 c = glm::dvec4(GetPoint(f.i2), 1);
-
-				area += areaOfTriangle(a, b, c);
-			}
-
-			return area;
 		}
 	};
 }
