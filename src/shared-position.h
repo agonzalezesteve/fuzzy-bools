@@ -846,7 +846,7 @@ namespace fuzzybools
 			}
 		}
 
-		void AddSingleGeometry(const Geometry &geom)
+		void AddGeometryA(const Geometry &geom)
 		{
 			for (size_t i = 0; i < geom.numFaces; i++)
 			{

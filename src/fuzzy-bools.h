@@ -96,7 +96,7 @@ namespace fuzzybools
 		std::vector<SpaceOrBuilding> spacesAndBuildings;
 
 		fuzzybools::SharedPosition sp;
-		sp.AddSingleGeometry(unionGeom);
+		sp.AddGeometryA(unionGeom);
 
 		std::vector<Triangle> geomTriangles = sp.A.triangles;
 		std::vector<bool> visited(geomTriangles.size(), false);
@@ -169,7 +169,7 @@ namespace fuzzybools
 			return newGeoms;
 
 		fuzzybools::SharedPosition sp;
-		sp.AddSingleGeometry(geom);
+		sp.AddGeometryA(geom);
 
 		std::vector<Triangle> geomTriangles = sp.A.triangles;
 		std::vector<bool> visited(geomTriangles.size(), false);
@@ -472,30 +472,72 @@ namespace fuzzybools
 		return secondLevelBoundaries;
 	}
 
-	std::vector<std::vector<glm::dvec3>> SplitGeometryInClosedWires(const Geometry &A)
+	std::vector<std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>>> SplitGeometryInPolygons(const Geometry &A)
 	{
-		std::vector<std::vector<glm::dvec3>> wires;
+		std::vector<std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>>> polygons;
 
 		for (auto contiguousAndCoplanarFaces : SplitGeometryByContiguousAndCoplanarFaces(A))
 		{
-			std::vector<glm::dvec3> wire;
+			std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>> polygon;
+
+			fuzzybools::SharedPosition polygonSharedPosition;
 
 			fuzzybools::SharedPosition sp;
-			sp.AddSingleGeometry(contiguousAndCoplanarFaces);
+			sp.AddGeometryA(contiguousAndCoplanarFaces);
 
 			auto contoursA = sp.A.GetContourSegments();
 			for (auto &[planeId, contours] : contoursA)
 			{
-				for (auto &segment : contours)
+				std::vector<size_t> wire;
+
+				std::vector<bool> visited(contours.size(), false);
+				for (int i = 0; i < contours.size(); ++i)
 				{
-					wire.push_back(sp.points[segment.first].location3D);
+					if (visited[i])
+						continue;
+
+					wire.push_back(contours[i].first);
+					wire.push_back(contours[i].second);
+					visited[i] = true;
+
+					for (int j = i + 1; j < contours.size(); ++j)
+					{
+						if (visited[j])
+							continue;
+
+						if (contours[j].first != wire[wire.size() - 1])
+							continue;
+
+						if (contours[j].second == wire[0])
+						{
+							break;
+						}
+						else
+						{
+							wire.push_back(contours[j].second);
+							visited[j] = true;
+						}
+					}
 				}
+
+				std::vector<size_t> polygonWire(wire.size());
+				for (auto &pointId : wire)
+				{
+					polygonWire.push_back(polygonSharedPosition.AddPoint(sp.points[pointId].location3D));
+				}
+
+				polygon.second.push_back(polygonWire);
 			}
 
-			wires.push_back(wire);
+			for (auto &point : polygonSharedPosition.points)
+			{
+				polygon.first.push_back(point.location3D);
+			}
+
+			polygons.push_back(polygon);
 		}
 
-		return wires;
+		return polygons;
 	}
 
 	void GetSpacesGeomsByBuildingElements(std::vector<BuildingElement> &buildingElements)
@@ -529,6 +571,19 @@ namespace fuzzybools
 			auto firstLevelBoundary = firstLevelBoundaries[firstLevelBoundaryId];
 
 			std::cout << firstLevelBoundary.id << ", " << firstLevelBoundary.buildingElement << ", " << firstLevelBoundary.space << std::endl;
+
+			for (auto &polygon : SplitGeometryInPolygons(firstLevelBoundary.geometry))
+			{
+				std::cout << "polygon" << std::endl;
+				for (auto &wire : polygon.second)
+				{
+					std::cout << "wire" << std::endl;
+					for (auto &pointId : wire)
+					{
+						std::cout << "(" << polygon.first[pointId].x << ", " << polygon.first[pointId].y << ", " << polygon.first[pointId].z << ")" << std::endl;
+					}
+				}
+			}
 		}
 
 		int secondLevelBoundaryId = 0;

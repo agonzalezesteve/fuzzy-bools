@@ -1,96 +1,177 @@
 #include <iostream>
-#include <emscripten/bind.h>
-
-
 #include "fuzzy-bools.h"
 
-std::string GetVersion() 
+std::string GetVersion()
 {
     return "1";
 }
 
-std::vector<double> va;
-std::vector<uint32_t> ia;
-std::vector<double> vb;
-std::vector<uint32_t> ib;
-
-struct AllocResult
+int main(int argc, char *argv[])
 {
-    uint32_t vptr_a = 0;
-    uint32_t iptr_a = 0;
-    uint32_t vptr_b = 0;
-    uint32_t iptr_b = 0;
-};
+    // Your code here
 
-AllocResult Alloc(uint32_t vsizeA, uint32_t isizeA, uint32_t vsizeB, uint32_t isizeB)
-{
-    std::cout << "Alloc: " << vsizeA << std::endl;
+    std::cout << "Fuzzy Bools Version: " << GetVersion() << std::endl;
 
-    va.resize(vsizeA, vsizeA);
-    ia.resize(isizeA, isizeA);
-    vb.resize(vsizeB, vsizeB);
-    ib.resize(isizeB, isizeB);
+    glm::dvec3 points[10][8] = {
+        {
+            glm::dvec3(0.0, 0.0, 0.0),
+            glm::dvec3(0.0, 0.0, 0.1),
+            glm::dvec3(0.0, 20.0, 0.1),
+            glm::dvec3(0.0, 20.0, 0.0),
+            glm::dvec3(30.0, 20.0, 0.1),
+            glm::dvec3(30.0, 20.0, 0.0),
+            glm::dvec3(30.0, 0.0, 0.1),
+            glm::dvec3(30.0, 0.0, 0.0),
+        },
+        {
+            glm::dvec3(0.0, 0.0, 0.1),
+            glm::dvec3(0.0, 0.0, 2.9),
+            glm::dvec3(0.0, 0.1, 2.9),
+            glm::dvec3(0.0, 0.1, 0.1),
+            glm::dvec3(30.0, 0.1, 2.9),
+            glm::dvec3(30.0, 0.1, 0.1),
+            glm::dvec3(30.0, 0.0, 2.9),
+            glm::dvec3(30.0, 0.0, 0.1),
+        },
+        {
+            glm::dvec3(0.0, 19.9, 0.1),
+            glm::dvec3(0.0, 19.9, 2.9),
+            glm::dvec3(0.0, 20.0, 2.9),
+            glm::dvec3(0.0, 20.0, 0.1),
+            glm::dvec3(30.0, 20.0, 2.9),
+            glm::dvec3(30.0, 20.0, 0.1),
+            glm::dvec3(30.0, 19.9, 2.9),
+            glm::dvec3(30.0, 19.9, 0.1),
+        },
+        {
+            glm::dvec3(0.0, 0.1, 0.1),
+            glm::dvec3(0.0, 0.1, 2.9),
+            glm::dvec3(0.0, 19.9, 2.9),
+            glm::dvec3(0.0, 19.9, 0.1),
+            glm::dvec3(0.1, 19.9, 2.9),
+            glm::dvec3(0.1, 19.9, 0.1),
+            glm::dvec3(0.1, 0.1, 2.9),
+            glm::dvec3(0.1, 0.1, 0.1),
+        },
+        {
+            glm::dvec3(29.9, 0.1, 0.1),
+            glm::dvec3(29.9, 0.1, 2.9),
+            glm::dvec3(29.9, 19.9, 2.9),
+            glm::dvec3(29.9, 19.9, 0.1),
+            glm::dvec3(30.0, 19.9, 2.9),
+            glm::dvec3(30.0, 19.9, 0.1),
+            glm::dvec3(30.0, 0.1, 2.9),
+            glm::dvec3(30.0, 0.1, 0.1),
+        },
+        {
+            glm::dvec3(19.9, 0.1, 0.1),
+            glm::dvec3(19.9, 0.1, 2.9),
+            glm::dvec3(19.9, 19.9, 2.9),
+            glm::dvec3(19.9, 19.9, 0.1),
+            glm::dvec3(20.0, 19.9, 2.9),
+            glm::dvec3(20.0, 19.9, 0.1),
+            glm::dvec3(20.0, 0.1, 2.9),
+            glm::dvec3(20.0, 0.1, 0.1),
+        },
+        {
+            glm::dvec3(20.0, 9.9, 0.1),
+            glm::dvec3(20.0, 9.9, 2.9),
+            glm::dvec3(20.0, 10.0, 2.9),
+            glm::dvec3(20.0, 10.0, 0.1),
+            glm::dvec3(29.9, 10.0, 2.9),
+            glm::dvec3(29.9, 10.0, 0.1),
+            glm::dvec3(29.9, 9.9, 2.9),
+            glm::dvec3(29.9, 9.9, 0.1),
+        },
+        {
+            glm::dvec3(0.0, 0.0, 2.9),
+            glm::dvec3(0.0, 0.0, 3.0),
+            glm::dvec3(0.0, 20.0, 3.0),
+            glm::dvec3(0.0, 20.0, 2.9),
+            glm::dvec3(30.0, 20.0, 3.0),
+            glm::dvec3(30.0, 20.0, 2.9),
+            glm::dvec3(30.0, 0.0, 3.0),
+            glm::dvec3(30.0, 0.0, 2.9),
+        },
+        {
+            glm::dvec3(-1.5, 9.5, 0.5),
+            glm::dvec3(-1.5, 9.5, 1.0),
+            glm::dvec3(-1.5, 10.5, 1.0),
+            glm::dvec3(-1.5, 10.5, 0.5),
+            glm::dvec3(1.5, 10.5, 1.0),
+            glm::dvec3(1.5, 10.5, 0.5),
+            glm::dvec3(1.5, 9.5, 1.0),
+            glm::dvec3(1.5, 9.5, 0.5),
+        },
+        {
+            glm::dvec3(19.5, 14.5, 0.5),
+            glm::dvec3(19.5, 14.5, 1.0),
+            glm::dvec3(19.5, 15.5, 1.0),
+            glm::dvec3(19.5, 15.5, 0.5),
+            glm::dvec3(20.5, 15.5, 1.0),
+            glm::dvec3(20.5, 15.5, 0.5),
+            glm::dvec3(20.5, 14.5, 1.0),
+            glm::dvec3(20.5, 14.5, 0.5),
+        }
+    };
 
-    AllocResult result;
-    result.vptr_a = (uint32_t)va.data();
-    result.iptr_a = (uint32_t)ia.data();
-    result.vptr_b = (uint32_t)vb.data();
-    result.iptr_b = (uint32_t)ib.data();
-    return result;
-}
+    std::vector<fuzzybools::Geometry> geoms;
+    for (auto &boxPoints : points)
+    {
+        fuzzybools::Geometry geom;
 
-std::vector<double> resultVertices;
-std::vector<uint32_t> resultIndices;
+        geom.AddFace(boxPoints[3], boxPoints[0], boxPoints[1]);
+        geom.AddFace(boxPoints[3], boxPoints[1], boxPoints[2]);
+        geom.AddFace(boxPoints[5], boxPoints[3], boxPoints[2]);
+        geom.AddFace(boxPoints[5], boxPoints[2], boxPoints[4]);
+        geom.AddFace(boxPoints[7], boxPoints[5], boxPoints[4]);
+        geom.AddFace(boxPoints[7], boxPoints[4], boxPoints[6]);
+        geom.AddFace(boxPoints[0], boxPoints[7], boxPoints[6]);
+        geom.AddFace(boxPoints[0], boxPoints[6], boxPoints[1]);
+        geom.AddFace(boxPoints[3], boxPoints[5], boxPoints[7]);
+        geom.AddFace(boxPoints[3], boxPoints[7], boxPoints[0]);
+        geom.AddFace(boxPoints[6], boxPoints[4], boxPoints[2]);
+        geom.AddFace(boxPoints[1], boxPoints[6], boxPoints[2]);
 
-struct BoolResult
-{
-    uint32_t numVertices = 0;
-    uint32_t numIndices = 0;
-    uint32_t vptr = 0;
-    uint32_t iptr = 0;
-};
+        geoms.push_back(geom);
+    }
 
-BoolResult DoSubtract() 
-{
-    fuzzybools::Geometry A;
-    fuzzybools::Geometry B;
+    std::vector<fuzzybools::BuildingElement> buildingElements(geoms.size());
+    for (int buildingElementId = 0; buildingElementId < geoms.size(); ++buildingElementId)
+    {
+        buildingElements[buildingElementId].id = buildingElementId;
+        buildingElements[buildingElementId].geometry = geoms[buildingElementId];
+    }
+    buildingElements[8].isVoid = true;
+    buildingElements[3].voids.push_back(8);
+    buildingElements[9].isVoid = true;
+    buildingElements[5].voids.push_back(9);
 
-    A.BuildFromVectors(va, ia);
-    B.BuildFromVectors(vb, ib);
+    fuzzybools::GetSpacesGeomsByBuildingElements(buildingElements);
 
-    auto outputGeometry = fuzzybools::Subtract(A, B);
+    // auto resultUnion = fuzzybools::Union(A, B);
 
-    resultVertices = outputGeometry.vertexData;
-    resultIndices = outputGeometry.indexData;
+    // size_t offsetUnion = 0;
 
-    BoolResult result;
+    // std::ofstream ofsUnion("union.obj", std::ofstream::out);
+    // ofsUnion << fuzzybools::ToObj(resultUnion, offsetUnion);
+    // ofsUnion.close();
 
-    result.numVertices = resultVertices.size();
-    result.numIndices = resultIndices.size();
+    // auto resultIntersection = fuzzybools::Intersection(A, B);
 
-    result.vptr = (uint32_t)resultVertices.data();
-    result.iptr = (uint32_t)resultIndices.data();
+    // size_t offsetIntersection = 0;
 
-    return result;
-}
+    // std::ofstream ofsIntersection("intersection.obj", std::ofstream::out);
+    // ofsIntersection << fuzzybools::ToObj(resultIntersection, offsetIntersection);
+    // ofsIntersection.close();
 
-EMSCRIPTEN_BINDINGS(my_module) {
+    // auto resultDifference = fuzzybools::Difference(A, B);
 
-    emscripten::function("Alloc", &Alloc);
-    emscripten::function("DoSubtract", &DoSubtract);
-    emscripten::function("GetVersion", &GetVersion);
-    
-    emscripten::value_object<BoolResult>("BoolResult")
-        .field("numVertices", &BoolResult::numVertices)
-        .field("numIndices", &BoolResult::numIndices)
-        .field("vptr", &BoolResult::vptr)
-        .field("iptr", &BoolResult::iptr)
-        ;
-        
-    emscripten::value_object<AllocResult    >("AllocResult")
-        .field("vptr_a", &AllocResult::vptr_a)
-        .field("iptr_a", &AllocResult::iptr_a)
-        .field("vptr_b", &AllocResult::vptr_b)
-        .field("iptr_b", &AllocResult::iptr_b)
-        ;
+    // size_t offsetDifference = 0;
+
+    // std::ofstream ofsDifference("difference.obj", std::ofstream::out);
+    // ofsDifference << fuzzybools::ToObj(resultDifference, offsetDifference);
+    // ofsDifference.close();
+
+    return 0;
 }
