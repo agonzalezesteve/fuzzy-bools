@@ -472,6 +472,80 @@ namespace fuzzybools
 		return secondLevelBoundaries;
 	}
 
+	bool ArePointsCollinear(const std::vector<fuzzybools::Point> &points, size_t idA, size_t idB, size_t idC)
+	{
+		auto A = points[idA].location3D;
+		auto B = points[idB].location3D;
+		auto C = points[idC].location3D;
+		return glm::length(glm::cross(B - A, C - A)) < 1e-6;
+	}
+
+	void TryAddPoint(size_t pointId, std::vector<size_t> &wire, const std::vector<fuzzybools::Point> &points, bool &isWireClosed)
+	{
+		if (pointId == wire[0])
+		{
+			if (ArePointsCollinear(points, wire[0], wire[wire.size() - 1], wire[wire.size() - 2]))
+			{
+				wire.pop_back();
+			}
+			if (ArePointsCollinear(points, wire[1], wire[0], wire[wire.size() - 1]))
+			{
+				wire.erase(wire.begin());
+			}
+			isWireClosed = true;
+		}
+		else
+		{
+			if (ArePointsCollinear(points, pointId, wire[wire.size() - 1], wire[wire.size() - 2]))
+			{
+				wire[wire.size() - 1] = pointId;
+			}
+			else
+			{
+				wire.push_back(pointId);
+			}
+		}
+	}
+
+	double WireArea(const std::vector<size_t> &wire, const std::vector<glm::dvec3> &points3D)
+	{
+		if (wire.size() < 3)
+			return 0.0;
+
+		glm::dvec3 area = glm::cross(points3D[wire[0]], points3D[wire[wire.size() - 1]]);
+
+		for (int i = 1; i < wire.size(); ++i)
+		{
+			area += glm::cross(points3D[wire[i]], points3D[wire[i - 1]]);
+		}
+
+		return glm::length(area) / 2;
+	}
+
+	double PolygonArea(std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>> polygon)
+	{
+		double area = WireArea(polygon.second[0], polygon.first);
+
+		for (int i = 1; i < polygon.second.size(); ++i)
+		{
+			area -= WireArea(polygon.second[i], polygon.first);
+		}
+
+		return area;
+	}
+
+	glm::vec3 GetWireNormal(const std::vector<size_t> &wire, const std::vector<fuzzybools::Point> &points)
+	{
+		if (wire.size() < 3)
+			return glm::vec3(0, 0, 0);
+
+		auto A = points[wire[0]].location3D;
+		auto B = points[wire[1]].location3D;
+		auto C = points[wire[-1]].location3D;
+
+		return glm::cross(B - A, C - A);
+	}
+
 	std::vector<std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>>> SplitGeometryInPolygons(const Geometry &A)
 	{
 		std::vector<std::pair<std::vector<glm::dvec3>, std::vector<std::vector<size_t>>>> polygons;
@@ -488,50 +562,70 @@ namespace fuzzybools
 			auto contoursA = sp.A.GetContourSegments();
 			for (auto &[planeId, contours] : contoursA)
 			{
-				std::vector<size_t> wire;
-
 				std::vector<bool> visited(contours.size(), false);
 				for (int i = 0; i < contours.size(); ++i)
 				{
 					if (visited[i])
 						continue;
 
+					std::vector<size_t> wire;
+
 					wire.push_back(contours[i].first);
 					wire.push_back(contours[i].second);
 					visited[i] = true;
 
-					for (int j = i + 1; j < contours.size(); ++j)
+					bool isWireClosed = false;
+					while (!isWireClosed)
 					{
-						if (visited[j])
-							continue;
-
-						if (contours[j].first != wire[wire.size() - 1])
-							continue;
-
-						if (contours[j].second == wire[0])
+						for (int j = i + 1; j < contours.size(); ++j)
 						{
-							break;
-						}
-						else
-						{
-							wire.push_back(contours[j].second);
-							visited[j] = true;
+							if (visited[j])
+								continue;
+
+							if (contours[j].first == wire[wire.size() - 1])
+							{
+								TryAddPoint(contours[j].second, wire, sp.points, isWireClosed);
+								visited[j] = true;
+								break;
+							}
+							else if (contours[j].second == wire[wire.size() - 1])
+							{
+								TryAddPoint(contours[j].first, wire, sp.points, isWireClosed);
+								visited[j] = true;
+								break;
+							}
 						}
 					}
+
+					std::vector<size_t> polygonWire(wire.size());
+					for (int k = 0; k < wire.size(); ++k)
+					{
+						auto pointId = wire[k];
+						auto point3D = sp.points[pointId].location3D;
+						polygonWire[k] = polygonSharedPosition.AddPoint(point3D);
+					}
+
+					if (polygon.second.size() > 0 && glm::dot(GetWireNormal(polygon.second[0], sp.points), GetWireNormal(polygonWire, sp.points)) < 0)
+					{
+						std::reverse(polygonWire.begin(), polygonWire.end());
+					}
+
+					polygon.second.push_back(polygonWire);
 				}
 
-				std::vector<size_t> polygonWire(wire.size());
-				for (auto &pointId : wire)
+				for (auto &point : polygonSharedPosition.points)
 				{
-					polygonWire.push_back(polygonSharedPosition.AddPoint(sp.points[pointId].location3D));
+					polygon.first.push_back(point.location3D);
 				}
 
-				polygon.second.push_back(polygonWire);
-			}
-
-			for (auto &point : polygonSharedPosition.points)
-			{
-				polygon.first.push_back(point.location3D);
+				if (polygon.second.size() > 1)
+				{
+					auto comparator = [polygon](std::vector<size_t> a, std::vector<size_t> b)
+					{
+						return WireArea(a, polygon.first) > WireArea(b, polygon.first);
+					};
+					std::sort(polygon.second.begin(), polygon.second.end(), comparator);
+				}
 			}
 
 			polygons.push_back(polygon);
@@ -553,8 +647,6 @@ namespace fuzzybools
 		}
 
 		auto spacesAndBuildings = GetSpacesAndBuildings(unionGeom);
-		auto firstLevelBoundaries = GetFirstLevelBoundaries(buildingElements, spacesAndBuildings);
-		auto secondLevelBoundaries = GetSecondLevelBoundaries(buildingElements, spacesAndBuildings, firstLevelBoundaries);
 
 		for (size_t spaceOrBuildingId = 0; spaceOrBuildingId < spacesAndBuildings.size(); spaceOrBuildingId++)
 		{
@@ -565,6 +657,8 @@ namespace fuzzybools
 			ofs << fuzzybools::ToObj(spaceOrBuilding.geometry, offset);
 			ofs.close();
 		}
+
+		auto firstLevelBoundaries = GetFirstLevelBoundaries(buildingElements, spacesAndBuildings);
 
 		for (size_t firstLevelBoundaryId = 0; firstLevelBoundaryId < firstLevelBoundaries.size(); firstLevelBoundaryId++)
 		{
@@ -578,6 +672,7 @@ namespace fuzzybools
 				for (auto &wire : polygon.second)
 				{
 					std::cout << "wire" << std::endl;
+					std::cout << WireArea(wire, polygon.first) << std::endl;
 					for (auto &pointId : wire)
 					{
 						std::cout << "(" << polygon.first[pointId].x << ", " << polygon.first[pointId].y << ", " << polygon.first[pointId].z << ")" << std::endl;
@@ -585,6 +680,8 @@ namespace fuzzybools
 				}
 			}
 		}
+
+		auto secondLevelBoundaries = GetSecondLevelBoundaries(buildingElements, spacesAndBuildings, firstLevelBoundaries);
 
 		int secondLevelBoundaryId = 0;
 		while (secondLevelBoundaryId < secondLevelBoundaries.size())
