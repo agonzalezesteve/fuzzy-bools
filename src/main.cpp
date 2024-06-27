@@ -96,14 +96,14 @@ int main(int argc, char *argv[])
         geoms.push_back(geom);
     }
 
-    std::vector<fuzzybools::BuildingElement> buildingElements(geoms.size());
-    for (int buildingElementId = 0; buildingElementId < geoms.size(); ++buildingElementId)
-    {
-        buildingElements[buildingElementId].id = buildingElementId;
-        buildingElements[buildingElementId].geometry = geoms[buildingElementId];
-    }
+    // std::vector<fuzzybools::BuildingElement> buildingElements(geoms.size());
+    // for (int buildingElementId = 0; buildingElementId < geoms.size(); ++buildingElementId)
+    // {
+    //     buildingElements[buildingElementId].id = buildingElementId;
+    //     buildingElements[buildingElementId].geometry = geoms[buildingElementId];
+    // }
 
-    fuzzybools::GetSpacesGeomsByBuildingElements(buildingElements);
+    // fuzzybools::GetSpacesGeomsByBuildingElements(buildingElements);
 
     return 0;
 }
